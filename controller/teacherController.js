@@ -17,49 +17,88 @@ const createTeacher = async(req, res) => {
                 message: "School not found",
             });
         }
-            const {teacherName, email, addresss, subject, password, confirmPassword} = req.body
-            
-            if (password !== confirmPassword) {
-                res.status(404).json({
-                    message: "your password and your confirm password must be the same"
-                })
-            } else {
-                const isEmail = await teacherModel.findOne({email})
-                if (isEmail) {
+            const {teacherName, email, addresss, subject, password, comfirmPassword} = req.body
+
+            if (req.files) {
+                if (password !== comfirmPassword) {
                     res.status(404).json({
-                        message: "This email already exist"
+                        message: "your password and your confirm password must be the same"
                     })
-                    console.log(isEmail);
                 } else {
-                    const salt = bcrypt.genSaltSync(10)
-                const harshPassword = bcrypt.hashSync(password, salt)
+                    const isEmail = await teacherModel.findOne({email})
+                    if (!isEmail) {
+                        res.status(404).json({
+                            message: "This email already exist"
+                        })
+                      
+                    } else {
+                        const salt = bcrypt.genSaltSync(10)
+                    const harshPassword = bcrypt.hashSync(password, salt)
+    
+                    
+                    const teacherprofile = await cloudinary.uploader.upload(req.files.profile.tempFilePath)
+    
+                    const body = new teacherModel({
+                        teacherName,
+                        email, 
+                        profile:teacherprofile.secure_url ,
+                        addresss, 
+                        subject, 
+                        school,
+                        password: harshPassword, 
+                        confirmPassword: harshPassword
+                    })
+    
+                    const token = await jwt.sign( { email }, process.env.secret, { expiresIn: "5m" } );
+    
+                    const savedTeacher = await body.save();
+                    school.teacher.push(savedTeacher)
+                    school.save()
+                    savedTeacher.save()
+                    res.status(201).json({
+                        message: "teacher created sucessfully",
+                        data: savedTeacher
+                    })
+                    }
+                }
+            } else {
+                if (password !== comfirmPassword) {
+                    res.status(404).json({
+                        message: "your password and your confirm password must be the same"
+                    })
+                } else {
+                    const isEmail = await teacherModel.findOne({email})
+                    if (!isEmail) {
+                        res.status(404).json({
+                            message: "This email already exist"
+                        })
+                      
+                    } else {
+                        const salt = bcrypt.genSaltSync(10)
+                    const harshPassword = bcrypt.hashSync(password, salt)
+                    
+                    const teacherDetails = await teacherModel.create(req.body)
 
-                const teacherfile = req.file.path
-                const teacherprofile = await cloudinary.uploader.upload(req.file.path)
-
-                const body = new teacherModel({
-                    teacherName,
-                    email, 
-                    profile:teacherprofile.secure_url ,
-                    addresss, 
-                    subject, 
-                    school,
-                    password: harshPassword, 
-                    confirmPassword: harshPassword
-                })
-
-                const token = await jwt.sign( { email }, process.env.secret, { expiresIn: "5m" } );
-
-                const savedTeacher = await body.save();
-                school.teacher.push(savedTeacher)
-                school.save()
-                savedTeacher.save()
-                res.status(201).json({
-                    message: "teacher created sucessfully",
-                    data: savedTeacher
-                })
+                    teacherDetails.teacherName = teacherName.toUpperCase()
+                    teacherDetails.email = teacherName.toLowerCase()
+                    teacherDetails.password = harshPassword
+                    teacherDetails.confirmPassword = harshPassword
+    
+                    const token = await jwt.sign( { email }, process.env.secret, { expiresIn: "5m" } );
+    
+                    const savedTeacher = await teacherDetails.save();
+                    school.teacher.push(savedTeacher)
+                    school.save()
+                    savedTeacher.save()
+                    res.status(201).json({
+                        message: "teacher created sucessfully",
+                        data: savedTeacher
+                    })
+                    }
                 }
             }
+            
+           
     } catch (error) {
         res.status(404).json({
             message: error.message
@@ -184,13 +223,13 @@ const forgetPassword = async(req, res) => {
 
 const findAllTeachers = async(req, res) => {
     try {
-        const teachers = await teacherModel.find().populate("students")
+        const teachers = await teacherModel.find().populate("student")
         if (!teachers) {
             res.status(404).json({
                 message: "no teacher available"
             })
         } else {
-            res.status(20).json({
+            res.status(200).json({
                 message: "teacher available are "+ teachers.length,
                 data: teachers
             })
@@ -205,7 +244,7 @@ const findAllTeachers = async(req, res) => {
 const OneTeacher = async(req, res) => {
     try {
         const {id} = req.params
-        const teacher = await teacherModel.findById(id).populate("students")
+        const teacher = await teacherModel.findById(id).populate("student")
         if (!teacher) {
             return res.status(404).json({
                 message: "teacher not found"
@@ -234,18 +273,21 @@ const updateTeacher = async (req, res) => {
                 message: "teacher not found"
             })
         } else {
-  
-        teacher.email = req.body || teacher.email, 
-        teacher.addresss = req.body || teacher.address,  
-        teacher.profile = req.body || teacher.profile,  
-        teacher.subject = req.body || teacher.subject,  
-        teacher.password = req.body || teacher.password,  
-        teacher.confirmPassword = req.body || teacher.confirmPassword, 
-
-        await teacher.save()
+          const { teacherName, email, address, profile, subject, password} = req.body
+          const teacherBody = {
+            teacherName:teacherName || teacherName.email, 
+            email:email || teacher.email, 
+            address:address  || teacher.address,  
+            profile:profile  || teacher.profile,  
+            subject:subject  || teacher.subject,  
+            password:password  || teacher.password,  
+          }
+      
+        const updatedTeacher = await teacherModel.findByIdAndUpdate(id, teacherBody, {new: true})
        
         res.status(200).json({
-            message: "updated sucessfully"
+            message: `${teacher.teacherName} updated sucessfully`,
+            data: updatedTeacher
         })
         }
     } catch (error) {
@@ -267,7 +309,7 @@ const deleteTeacher = async(req, res) => {
         } else {
             await teacherModel.findByIdAndDelete(id)
             res.status(200).json({
-                message: "deleted sucessfully"
+                message: `${teacher.teacherName} deleted sucessfully`
             }) 
         }
     } catch (error) {

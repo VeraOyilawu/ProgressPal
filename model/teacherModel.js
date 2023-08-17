@@ -12,7 +12,7 @@ const teacherSchema = new mongoose.Schema({
     },
     profile: {
         type: String,
-        required: true
+        default: "TeacherAvatar"
     },
     address: {
         type: String,
@@ -21,7 +21,7 @@ const teacherSchema = new mongoose.Schema({
         type: String,
         required: [true, "paasword is required"]
     },
-    confirmPassword: {
+    comfirmPassword: {
         type: String,
         required: [true, "paasword is required"]
     },

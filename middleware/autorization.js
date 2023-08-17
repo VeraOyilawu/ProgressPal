@@ -34,7 +34,7 @@ const authentication = async(req, res, next) => {
 const superAdminValidation = (req,res, next) => {
     authentication (req, res, async() => {
         const user = await userModel.findById(req.params.id)
-        if(user.isSuperAdmin){
+        if(user.isSuperAdmin === true ){
             next()
         } else {
             res.status(404).json({
@@ -44,6 +44,38 @@ const superAdminValidation = (req,res, next) => {
     }) 
 }
 
+
+const isLoggedin = (req,res, next) => {
+    authentication (req, res, async() => {
+        const user = await userModel.findById(req.params.id)
+        console.log("vera");
+        if(user.token){
+            next()
+        } else {
+            res.status(404).json({
+                message: "you are not logedin"
+            })
+        }
+    }) 
+}
+
+
+const isVerified = (req,res, next) => {
+    authentication (req, res, async() => {
+        const user = await userModel.findById(req.params.id)
+        if(user.token){
+            next()
+        } else {
+            res.status(404).json({
+                message: "you are not logedin"
+            })
+        }
+    }) 
+}
+
+
+
 module.exports = {
-    superAdminValidation
+    superAdminValidation,
+    isLoggedin
 }

@@ -21,42 +21,40 @@ const transport = nodemailer.createTransport({
 
 const signUp = async(req, res) => {
     try {
-        const {schoolName, email, logo, addresss, password, country, regNo, comfirmPassword, state, website} = req.body
+        const {schoolName, email, address, password, country, regNo, comfirmPassword, state, website} = req.body 
 
-       
-        if (password !== comfirmPassword) {
+        //with picture
+        if (req.files) {
+            const isEmail = await schoolModel.findOne({email})
+        if (isEmail) {
             res.status(404).json({
-                message: "make sure your input password is the same with your comfirmed password"
+                message: "This email already exist"
             })
         } else {
-            const isEmail = await schoolModel.findOne({email})
-           
-            if (!isEmail) {
+            if ( password !== comfirmPassword) {
                 res.status(404).json({
-                    message: "This email already exist"
+                    message: "make sure your input password is the same with your comfirmed password"
                 })
             } 
         else {
                 const salt = bcrypt.genSaltSync(10)
                 const harshPassword = bcrypt.hashSync(password, salt)
 
-                const logoFile = req.file.path
-                const logoImage = await cloudinary.uploader.upload(req.file.path)
+                const logoImage = await cloudinary.uploader.upload(req.files.logo.tempFilePath)
         
                 const body = await new schoolModel({
                     schoolName: schoolName.toUpperCase(),
                     email, 
                     logo: logoImage.secure_url,
-                    addresss,
+                    address,
                     state,
                     country, 
-                     password: harshPassword,
+                    password: harshPassword,
                     comfirmPassword: harshPassword,
                     regNo,
                     website
                 })
-
-                const token = await jwt.sign( { email }, process.env.secret, { expiresIn: "5m" } );
+                const token = await jwt.sign( { email, password }, process.env.secret, { expiresIn: "5m" } );
         
                 const baseUrl = process.env.BASE_URL
                 const mailOptions = {
@@ -67,9 +65,7 @@ const signUp = async(req, res) => {
                 };
         
                 await transport.sendMail(mailOptions);
-               
-                body.logo = logoImage.secure_url;
-        
+
                 const savedSchool = await body.save();
         
                 res.status(201).json({
@@ -78,6 +74,52 @@ const signUp = async(req, res) => {
                 })
             }
         }
+
+          //without picture
+        } else {
+            const isEmail = await schoolModel.findOne({email})
+        if (isEmail) {
+            res.status(404).json({
+                message: "This email already exist"
+            })
+        } else {
+            if ( password !== comfirmPassword) {
+                res.status(404).json({
+                    message: "make sure your input password is the same with your comfirmed password"
+                })
+            } 
+        else {
+                const salt = bcrypt.genSaltSync(10)
+                const harshPassword = bcrypt.hashSync(password, salt)
+
+                const studentDetails = await schoolModel.create(req.body)
+
+                studentDetails.schoolName = schoolName.toUpperCase()
+                studentDetails.password = harshPassword
+                studentDetails.comfirmPassword = harshPassword
+
+                const token = await jwt.sign( { email, password }, process.env.secret, { expiresIn: "5m" } );
+        
+                const baseUrl = process.env.BASE_URL
+                const mailOptions = {
+                    from: process.env.SENDER_EMAIL,
+                    to: email,
+                    subject: "ProgressPal - Please verify your account",
+                    html: `Please click on the link to verify your email: <a href="${baseUrl}/users/verify-email/${ token }">Verify Email</a>,`
+                };
+        
+                await transport.sendMail(mailOptions);
+
+                const savedSchool = await studentDetails.save();
+        
+                res.status(201).json({
+                    message: "school created sucessfully",
+                    data: savedSchool
+                })
+            }
+        }
+        }
+        
     } catch (error) {
         res.status(500).json({
             message: error.message
@@ -269,6 +311,8 @@ const forgetPassword = async(req, res) => {
     }
 }
 
+// jwt.decode()
+
 const addTeacher = async(req, res) => {
     try {
         const { email } = req.body
@@ -293,6 +337,103 @@ const addTeacher = async(req, res) => {
     }
 }
 
+const updateSchool = async(req, res) => {
+    try {
+        const schoolId = req.params.id
+        const school = await schoolModel.findById(schoolId)
+
+         if (!schoolId) {
+            res.status(404).json({
+                message: "this school those not exist"
+            })
+         } else {
+
+            const {schoolName, email, address, logo, password } = req.body;
+            
+            const schoolBody = {
+                schoolName: schoolName || school.schoolName,
+                email: email || school.email,
+                address: address || school.address,
+                logo: logo || school.logo,
+                password: password || school.password
+            }
+            const updatedSchool = await schoolModel.findByIdAndUpdate(schoolId, schoolBody, {new: true})
+            res.status(200).json({
+                message: `${school} has been updated sucessfully`,
+                data: updatedSchool
+            })
+         }
+    } catch (error) {
+        res.status(404).json({
+            message: error.message
+        })
+    }
+}
+
+const deleteSchool = async(req, res) => {
+    try {
+        const schoolId = req.params.id
+        const school = await schoolModel.findById(schoolId)
+        if (!school) {
+            res.status(404).json({
+                message: `${school} not found`,
+            }) 
+        } else {
+            res.status(404).json({
+                message: `${school.schoolName} deleted sucessfully`,
+                data: school
+            })
+        }
+        const dletedSchool = await schoolModel.findByIdAndDelete(school)
+    } catch (error) {
+        res.status(404).json({
+            message: error.message
+        })
+    }
+}
+
+const allSchool = async(req, res) => {
+    try {
+        const schools = await schoolModel.find()
+        if (!schools) {
+            res.status(404).json({
+                message: "No school found"
+            })
+        } else {
+            res.status(200).json({
+                message: "school s available are "+ schools.length,
+                data: schools
+            })
+        }
+    } catch (error) {
+        res.status(404).json({
+            message: error.message
+        })
+    }
+}
+
+const oneSchool = async(req, res) => {
+    try {
+        const schoolId = req.params.id
+        const school = await schoolModel.findById(schoolId)
+
+        if (!school) {
+            res.status(404).json({
+                message: `${school} not found`,
+            })
+        } else {
+            res.status(200).json({
+                message: `school found`,
+                data: school
+            })
+        }
+    } catch (error) {
+        res.status(404).json({
+            message: error.message
+        })
+    }
+}
+
 
 module.exports = {
     signUp,
@@ -303,6 +444,9 @@ module.exports = {
     changePassword,
     forgetPassword,
     addTeacher,
-
+    oneSchool,
+    allSchool,
+    updateSchool,
+    deleteSchool
 }
 

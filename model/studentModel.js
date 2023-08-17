@@ -12,7 +12,7 @@ const studentSchema = new mongoose.Schema({
     },
     studentImage: {
         type: String,
-        required: true
+        default: "StudentAvatar"
     },
     address: {
         type: String,

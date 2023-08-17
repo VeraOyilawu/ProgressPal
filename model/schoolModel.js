@@ -12,17 +12,11 @@ const schoolSchema = new mongoose.Schema({
     },
     logo: {
         type: String,
-        required: true
+        default: "SchoolAvatar"
     },
     address: {
         type: String,
-        // required: true
-    },
-    state: {
-        type: String
-    },
-    country: {
-        type: String
+        required: [true, "address is required"],
     },
     password: {
         type: String,
@@ -31,12 +25,6 @@ const schoolSchema = new mongoose.Schema({
     comfirmPassword: {
         type: String,
         required: [true, "paasword is required"]
-    },
-    regNo: {
-        type: Number
-    },
-    website: {
-        type: String
     },
     teacher: [{
         type: mongoose.Schema.Types.ObjectId,
