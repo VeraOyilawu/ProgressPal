@@ -22,6 +22,22 @@ const schoolSchema = new mongoose.Schema({
         type: String,
         required: [true, "paasword is required"]
     },
+    state: {
+        type: String,
+        default: "state"
+    },
+    country: {
+        type: String,
+        default: "Nigeria"
+    },
+    regNo: {
+        type: String,
+        default: "12345"
+    },
+    website: {
+        type: String,
+        default: "www.School.com"
+    },
     comfirmPassword: {
         type: String,
         required: [true, "paasword is required"]

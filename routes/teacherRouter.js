@@ -5,20 +5,20 @@ const { createTeacher, signOut, login, forgetPassword, changePassword, findAllTe
 
 // const { superAdminValidation } = require("../middleware/autorization")
 
-const {validateTeacher} = require("../middleware/teacherValidation")
+const {validateTeacher, validatelogIn, validateEmail, validateUpdate} = require("../middleware/teacherValidation")
 
 router.route("/").get((req, res) => {
     res.json("Welcome user to  progressPal Homepage")
 })
 
 router.route("/createTeacher/:id").post(validateTeacher, createTeacher)
-router.route("/loginTeacher").post(login)
+router.route("/loginTeacher").post(validatelogIn, login)
 router.route("/signotTeacher/:id").post(signOut)
-router.route("/forgetPassword/:id").post(forgetPassword)
-router.route("/changepassword/:id").put(changePassword)
+router.route("/forgetPassword/:id").post(validateEmail, forgetPassword)
+router.route("/changepassword/:id").put(validateEmail, changePassword)
 router.route("/allTeachers").get( findAllTeachers)
 router.route("/teacher/:id").get( OneTeacher)
-router.route("/updateTeacher/:id").patch( updateTeacher)
+router.route("/updateTeacher/:id").patch(validateUpdate, updateTeacher)
 router.route("/deleteTeacher/:id").delete(deleteTeacher)
 
 module.exports = router

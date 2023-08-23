@@ -5,7 +5,7 @@ const { signOut, verifyEmail, resendVerificationEmail, logIn, forgetPassword, ch
 
 const {superAdminValidation, isLoggedin} = require("../middleware/autorization")
 
-const {validateSchool} = require("../middleware/schoolValidation")
+const { validateSchool, validateEmail, validatelogIn, validateUpdate, } = require("../middleware/schoolValidation")
 
 
 router.route("/").get((req, res) => {
@@ -14,16 +14,16 @@ router.route("/").get((req, res) => {
 
 router.post("/signIn", validateSchool, signUp)
 router.route("/verification/:token").get(verifyEmail)
-router.route("/resendEmail").post(resendVerificationEmail)
-router.route("/login").post(logIn)
-router.route("/signOut/:id").post(signOut)
-router.route("/forgetPassword/:id").post(forgetPassword)
-router.route("/changepassword/:id").put(changePassword)
-router.route("/allSchools").get(allSchool)
-router.route("/oneSchool/:id").get(oneSchool)
-router.route("/updateSchool/:id").put(updateSchool)
-router.route("/deleteSchool/:id").delete(deleteSchool)
-router.route("/addTeacher").post(addTeacher)
+router.route("/resendEmail").post(validateEmail ,resendVerificationEmail)
+router.route("/login").post(validatelogIn, logIn)
+router.route("/signOut/:id").post(isLoggedin, signOut)
+router.route("/forgetPassword/:id").post(isLoggedin, validateEmail, forgetPassword)
+router.route("/changepassword/:id").put(isLoggedin,changePassword)
+router.route("/allSchools").get(isLoggedin, allSchool)
+router.route("/oneSchool/:id").get(isLoggedin, oneSchool)
+router.route("/updateSchool/:id").put(isLoggedin, validateUpdate, updateSchool)
+router.route("/deleteSchool/:id").delete(isLoggedin,deleteSchool)
+router.route("/addTeacher").post(isLoggedin, validateEmail, addTeacher)
 
 
 module.exports = router

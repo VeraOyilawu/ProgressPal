@@ -54,7 +54,7 @@ const signUp = async(req, res) => {
                     regNo,
                     website
                 })
-                const token = await jwt.sign( { email, password }, process.env.secret, { expiresIn: "5m" } );
+                const token = await jwt.sign( { email, password, id }, process.env.secret, { expiresIn: "5m" } );
         
                 const baseUrl = process.env.BASE_URL
                 const mailOptions = {
@@ -349,7 +349,7 @@ const updateSchool = async(req, res) => {
          } else {
 
             const {schoolName, email, address, logo, password } = req.body;
-            
+
             const schoolBody = {
                 schoolName: schoolName || school.schoolName,
                 email: email || school.email,
@@ -357,9 +357,10 @@ const updateSchool = async(req, res) => {
                 logo: logo || school.logo,
                 password: password || school.password
             }
+  
             const updatedSchool = await schoolModel.findByIdAndUpdate(schoolId, schoolBody, {new: true})
             res.status(200).json({
-                message: `${school} has been updated sucessfully`,
+                message: `${school.schoolName} has been updated sucessfully`,
                 data: updatedSchool
             })
          }
